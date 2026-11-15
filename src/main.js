@@ -42,12 +42,51 @@ function todayKey() {
   return dateKey(new Date());
 }
 
-function isOverdue(task) {
-  if (task.isDone) return false;
-  if (task.dueTime) {
-    return new Date(`${task.dueDate}T${task.dueTime}:00`).getTime() < Date.now();
+function parseDateKey(key) {
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function weekdayNumber(date) {
+  return ((date.getDay() + 6) % 7) + 1;
+}
+
+function occursOn(task, key) {
+  if (!task.repeat) return task.dueDate === key;
+  const rule = task.repeat;
+  if (rule.freq !== 'weekly') return false;
+  if (key < task.dueDate) return false;
+  if (rule.until && key > rule.until) return false;
+  const date = parseDateKey(key);
+  if (!rule.weekdays.includes(weekdayNumber(date))) return false;
+  const anchor = parseDateKey(task.dueDate);
+  const diffDays = Math.round(
+    (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+      - Date.UTC(anchor.getFullYear(), anchor.getMonth(), anchor.getDate())) / 86400000,
+  );
+  const weekIndex = Math.floor(diffDays / 7);
+  return weekIndex % (rule.interval || 1) === 0;
+}
+
+function occurrenceFor(task, key) {
+  const override = task.overrides?.[key];
+  if (override?.cancelled) return null;
+  return {
+    task,
+    date: key,
+    title: task.title,
+    dueTime: task.dueTime,
+    isDone: task.repeat ? !!override?.isDone : task.isDone,
+    recurring: !!task.repeat,
+  };
+}
+
+function isOverdue(occ) {
+  if (occ.isDone) return false;
+  if (occ.dueTime) {
+    return new Date(`${occ.date}T${occ.dueTime}:00`).getTime() < Date.now();
   }
-  return task.dueDate < todayKey();
+  return occ.date < todayKey();
 }
 
 function showToast(message, type = 'info', duration = 2600) {
@@ -63,13 +102,15 @@ function setStatus(message, type = 'ready') {
   $('status-dot').className = `status-dot ${type}`;
 }
 
-function tasksForDate(key) {
+function occurrencesForDate(key) {
   return state.tasks
-    .filter((task) => task.dueDate === key)
+    .filter((task) => occursOn(task, key))
+    .map((task) => occurrenceFor(task, key))
+    .filter(Boolean)
     .sort((a, b) => {
       if (a.isDone !== b.isDone) return a.isDone ? 1 : -1;
       const timeOrder = (a.dueTime || '99:99').localeCompare(b.dueTime || '99:99');
-      return timeOrder || a.createdAt.localeCompare(b.createdAt);
+      return timeOrder || a.task.createdAt.localeCompare(b.task.createdAt);
     });
 }
 
@@ -78,15 +119,18 @@ function render() {
   const month = state.viewDate.getMonth();
   $('month-label').textContent = `${year}年${month + 1}月`;
 
-  const monthTasks = state.tasks.filter((task) => {
-    const [taskYear, taskMonth] = task.dueDate.split('-').map(Number);
-    return taskYear === year && taskMonth === month + 1;
-  });
-  const pending = monthTasks.filter((task) => !task.isDone).length;
-  $('month-summary').textContent = monthTasks.length
-    ? `本月 ${monthTasks.length} 项 · 未完成 ${pending} 项`
+  let monthCount = 0;
+  let monthPending = 0;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const occurrences = occurrencesForDate(`${year}-${pad(month + 1)}-${pad(day)}`);
+    monthCount += occurrences.length;
+    monthPending += occurrences.filter((occ) => !occ.isDone).length;
+  }
+  $('month-summary').textContent = monthCount
+    ? `本月 ${monthCount} 项 · 未完成 ${monthPending} 项`
     : '本月暂无 DDL';
-  $('empty-state').hidden = monthTasks.length > 0;
+  $('empty-state').hidden = monthCount > 0;
 
   const first = new Date(year, month, 1);
   const offset = (first.getDay() + 6) % 7;
@@ -124,50 +168,78 @@ function renderDay(date, visibleMonth) {
 
   const list = document.createElement('div');
   list.className = 'task-list';
-  tasksForDate(key).forEach((task) => list.appendChild(renderTask(task)));
+  occurrencesForDate(key).forEach((occ) => list.appendChild(renderTask(occ)));
   cell.appendChild(list);
   return cell;
 }
 
-function renderTask(task) {
+function renderTask(occ) {
   const item = document.createElement('div');
   item.className = 'task-item';
-  if (task.isDone) item.classList.add('is-done');
-  if (isOverdue(task)) item.classList.add('is-overdue');
-  item.title = `${task.dueDate}${task.dueTime ? ` ${task.dueTime}` : '（全天）'}${isOverdue(task) ? ' · 已逾期' : ''}`;
+  if (occ.isDone) item.classList.add('is-done');
+  if (isOverdue(occ)) item.classList.add('is-overdue');
+  item.title = `${occ.date}${occ.dueTime ? ` ${occ.dueTime}` : '（全天）'}${occ.recurring ? ' · 每周重复' : ''}${isOverdue(occ) ? ' · 已逾期' : ''}`;
 
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
   checkbox.className = 'task-checkbox';
-  checkbox.checked = task.isDone;
-  checkbox.title = task.isDone ? '取消完成' : '标记完成';
-  checkbox.setAttribute('aria-label', `${checkbox.title}：${task.title}`);
-  checkbox.addEventListener('change', () => toggleDone(task.id, checkbox.checked));
+  checkbox.checked = occ.isDone;
+  checkbox.title = occ.isDone ? '取消完成' : '标记完成';
+  checkbox.setAttribute('aria-label', `${checkbox.title}：${occ.title}`);
+  checkbox.addEventListener('change', () => toggleDone(occ.task.id, occ.date, checkbox.checked));
 
   const title = document.createElement('button');
   title.type = 'button';
   title.className = 'task-title';
-  title.textContent = task.title;
-  title.title = '点击编辑';
-  title.addEventListener('click', () => openTaskDialog(task.id));
+  title.textContent = occ.title;
+  title.title = occ.recurring ? '点击编辑整个系列' : '点击编辑';
+  title.addEventListener('click', () => openTaskDialog(occ.task.id));
 
   const remove = document.createElement('button');
   remove.type = 'button';
   remove.className = 'delete-task';
   remove.textContent = '×';
-  remove.title = '删除';
-  remove.setAttribute('aria-label', `删除：${task.title}`);
-  remove.addEventListener('click', () => openDeleteDialog(task.id));
+  remove.title = occ.recurring ? '删除整个系列' : '删除';
+  remove.setAttribute('aria-label', `删除：${occ.title}`);
+  remove.addEventListener('click', () => openDeleteDialog(occ.task.id));
 
   item.appendChild(checkbox);
-  if (task.dueTime) {
+  if (occ.recurring) {
+    const badge = document.createElement('span');
+    badge.className = 'repeat-badge';
+    badge.textContent = '↻';
+    badge.title = '每周重复';
+    item.appendChild(badge);
+  }
+  if (occ.dueTime) {
     const time = document.createElement('span');
     time.className = 'task-time';
-    time.textContent = task.dueTime;
+    time.textContent = occ.dueTime;
     item.appendChild(time);
   }
   item.append(title, remove);
   return item;
+}
+
+function getSelectedWeekdays() {
+  return [...document.querySelectorAll('.weekday-btn.selected')]
+    .map((button) => Number(button.dataset.weekday))
+    .sort((a, b) => a - b);
+}
+
+function setSelectedWeekdays(days) {
+  document.querySelectorAll('.weekday-btn').forEach((button) => {
+    button.classList.toggle('selected', days.includes(Number(button.dataset.weekday)));
+  });
+}
+
+function syncRepeatOptions() {
+  const weekly = $('task-repeat').value === 'weekly';
+  $('repeat-options').hidden = !weekly;
+  if (weekly && getSelectedWeekdays().length === 0) {
+    const key = $('task-date').value || todayKey();
+    setSelectedWeekdays([weekdayNumber(parseDateKey(key))]);
+  }
 }
 
 function openTaskDialog(id = null, defaultDate = todayKey()) {
@@ -177,6 +249,10 @@ function openTaskDialog(id = null, defaultDate = todayKey()) {
   $('task-title').value = task?.title || '';
   $('task-date').value = task?.dueDate || defaultDate;
   $('task-time').value = task?.dueTime || '';
+  $('task-repeat').value = task?.repeat ? 'weekly' : 'none';
+  setSelectedWeekdays(task?.repeat?.weekdays || [weekdayNumber(parseDateKey(task?.dueDate || defaultDate))]);
+  $('task-until').value = task?.repeat?.until || '';
+  syncRepeatOptions();
   $('edit-delete-btn').hidden = !task;
   $('form-error').hidden = true;
   $('save-task-btn').textContent = task ? '保存修改' : '创建';
@@ -191,10 +267,21 @@ async function saveTask(event) {
   event.preventDefault();
   if (state.saving || !$('task-form').reportValidity()) return;
   const id = state.editingId;
+  let repeat = null;
+  if ($('task-repeat').value === 'weekly') {
+    const weekdays = getSelectedWeekdays();
+    if (weekdays.length === 0) {
+      $('form-error').textContent = '每周重复至少选择一个星期';
+      $('form-error').hidden = false;
+      return;
+    }
+    repeat = { freq: 'weekly', interval: 1, weekdays, until: $('task-until').value || null };
+  }
   const input = {
     title: $('task-title').value,
     dueDate: $('task-date').value,
     dueTime: $('task-time').value || null,
+    repeat,
   };
   state.saving = true;
   $('save-task-btn').disabled = true;
@@ -225,9 +312,9 @@ async function saveTask(event) {
   }
 }
 
-async function toggleDone(id, isDone) {
+async function toggleDone(id, date, isDone) {
   try {
-    const updated = await requireInvoke()('set_task_done', { id, isDone });
+    const updated = await requireInvoke()('set_occurrence_done', { id, date, isDone });
     const index = state.tasks.findIndex((task) => task.id === id);
     state.tasks[index] = updated;
     render();
@@ -242,6 +329,7 @@ function openDeleteDialog(id) {
   if (!task) return;
   state.deletingId = id;
   $('delete-task-title').textContent = task.title;
+  $('delete-series-note').hidden = !task.repeat;
   $('confirm-dialog').showModal();
 }
 
@@ -413,6 +501,13 @@ function bindEvents() {
     render();
   });
   $('new-task-btn').addEventListener('click', () => openTaskDialog());
+  $('task-repeat').addEventListener('change', syncRepeatOptions);
+  $('task-date').addEventListener('change', () => {
+    if ($('task-repeat').value === 'weekly') syncRepeatOptions();
+  });
+  document.querySelectorAll('.weekday-btn').forEach((button) => {
+    button.addEventListener('click', () => button.classList.toggle('selected'));
+  });
   $('task-form').addEventListener('submit', saveTask);
   $('confirm-form').addEventListener('submit', deleteTask);
   $('close-task-dialog').addEventListener('click', () => $('task-dialog').close());

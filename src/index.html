@@ -120,7 +120,32 @@
           <input id="task-time" type="time">
         </label>
       </div>
-      <p class="field-hint">不填写时间即为全天 DDL；过期未完成会标红。</p>
+      <label class="field">
+        <span>重复</span>
+        <select id="task-repeat">
+          <option value="none">不重复</option>
+          <option value="weekly">每周</option>
+        </select>
+      </label>
+      <div id="repeat-options" class="repeat-options" hidden>
+        <div class="field">
+          <span>星期</span>
+          <div class="weekday-row" id="weekday-row">
+            <button type="button" class="weekday-btn" data-weekday="1">一</button>
+            <button type="button" class="weekday-btn" data-weekday="2">二</button>
+            <button type="button" class="weekday-btn" data-weekday="3">三</button>
+            <button type="button" class="weekday-btn" data-weekday="4">四</button>
+            <button type="button" class="weekday-btn" data-weekday="5">五</button>
+            <button type="button" class="weekday-btn" data-weekday="6">六</button>
+            <button type="button" class="weekday-btn" data-weekday="7">日</button>
+          </div>
+        </div>
+        <label class="field">
+          <span>结束日期（可选）</span>
+          <input id="task-until" type="date">
+        </label>
+      </div>
+      <p class="field-hint">不填写时间即为全天 DDL；重复 DDL 的完成状态按每次日期记录。</p>
       <p id="form-error" class="form-error" role="alert" hidden></p>
       <div class="modal-actions">
         <button id="edit-delete-btn" class="button danger-ghost" type="button" hidden>删除</button>
@@ -137,6 +162,7 @@
         <h2>删除这条 DDL？</h2>
       </div>
       <p class="confirm-text">“<strong id="delete-task-title"></strong>” 将被永久删除，此操作无法撤销。</p>
+      <p id="delete-series-note" class="field-hint" hidden>这是重复 DDL，删除会移除整个系列。</p>
       <div class="modal-actions">
         <span class="action-spacer"></span>
         <button id="cancel-delete-btn" class="button secondary" type="button">取消</button>

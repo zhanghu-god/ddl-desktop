@@ -9,6 +9,7 @@
 - 在任意日期格中新建 DDL
 - 编辑标题、截止日期与可选时间
 - 全天 DDL、按时排序、过期未完成标红
+- 每周重复 DDL，月历自动展开，完成状态按每次日期记录
 - 完成 / 取消完成，已完成任务置灰并显示删除线
 - 删除前二次确认
 - 待办与已完成任务分别配色
@@ -23,7 +24,7 @@
 
 从 [Releases](https://github.com/zhanghu-god/ddl-desktop/releases) 下载：
 
-`ddl-desktop_0.2.2_x64-portable.zip`
+`ddl-desktop_0.3.0_x64-portable.zip`
 
 1. 将 ZIP 完整解压到一个有写入权限的目录。
 2. 双击 `ddl-desktop.exe`。
@@ -68,6 +69,8 @@ DDL Board\
 - `dueDate`：本地日期 `YYYY-MM-DD`
 - `dueTime`：本地时间 `HH:MM`，`null` 表示全天
 - `isDone`：是否完成
+- `repeat`：可选重复规则，目前支持 `weekly`，包含 `interval`、`weekdays`（1=周一，7=周日）、`until`
+- `overrides`：重复 DDL 的按次覆盖状态，key 为 `YYYY-MM-DD`，目前记录 `isDone` / `cancelled`
 - `createdAt` / `updatedAt`：UTC 时间戳
 
 Rust 后端会校验标题、日期、时间、主题和配色；文件损坏时会报告错误，不会自动清空原数据。
@@ -133,4 +136,4 @@ assets\                    # 图标源文件
 
 ## 版本与发布
 
-当前版本：`0.2.2`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。
+当前版本：`0.3.0`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。

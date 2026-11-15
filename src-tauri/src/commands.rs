@@ -33,6 +33,16 @@ pub fn set_task_done(
 }
 
 #[tauri::command]
+pub fn set_occurrence_done(
+    id: String,
+    date: String,
+    is_done: bool,
+    store: State<'_, AppStore>,
+) -> Result<Task, String> {
+    store.set_occurrence_done(&id, &date, is_done)
+}
+
+#[tauri::command]
 pub fn delete_task(id: String, store: State<'_, AppStore>) -> Result<(), String> {
     store.delete_task(&id)
 }

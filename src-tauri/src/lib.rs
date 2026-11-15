@@ -21,6 +21,7 @@ pub fn run() {
             commands::create_task,
             commands::update_task,
             commands::set_task_done,
+            commands::set_occurrence_done,
             commands::delete_task,
             commands::get_settings,
             commands::save_settings,

@@ -1,5 +1,6 @@
 //! 便携数据层：任务、配置和 WebView2 缓存均位于 exe 同级 data 目录。
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -9,7 +10,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::models::{Settings, StorageInfo, Task, TaskInput};
+use crate::models::{RepeatRule, Settings, StorageInfo, Task, TaskInput};
 
 const COLORS: [&str; 6] = ["blue", "green", "orange", "purple", "teal", "gray"];
 
@@ -54,7 +55,9 @@ impl AppStore {
                 title: task.title.clone(),
                 due_date: task.due_date.clone(),
                 due_time: task.due_time.clone(),
+                repeat: task.repeat.clone(),
             })?;
+            validate_repeat(&task.repeat, &task.due_date)?;
         }
 
         // 首次运行即创建可见的数据文件，方便备份与迁移。
@@ -87,7 +90,9 @@ impl AppStore {
     }
 
     pub fn create_task(&self, input: TaskInput) -> Result<Task, String> {
+        let repeat_input = input.repeat.clone();
         let (title, due_date, due_time) = normalize_task_input(input)?;
+        let repeat = validate_repeat(&repeat_input, &due_date)?;
         let now = timestamp();
         let task = Task {
             id: Uuid::new_v4().to_string(),
@@ -97,6 +102,8 @@ impl AppStore {
             is_done: false,
             created_at: now.clone(),
             updated_at: now,
+            repeat,
+            overrides: BTreeMap::new(),
         };
 
         let mut tasks = self
@@ -111,7 +118,9 @@ impl AppStore {
     }
 
     pub fn update_task(&self, id: &str, input: TaskInput) -> Result<Task, String> {
+        let repeat_input = input.repeat.clone();
         let (title, due_date, due_time) = normalize_task_input(input)?;
+        let repeat = validate_repeat(&repeat_input, &due_date)?;
         let mut tasks = self
             .tasks
             .lock()
@@ -130,6 +139,8 @@ impl AppStore {
             is_done: old.is_done,
             created_at: old.created_at.clone(),
             updated_at: timestamp(),
+            repeat,
+            overrides: old.overrides.clone(),
         };
         next[index] = updated.clone();
         write_json(&self.tasks_path, &next)?;
@@ -148,6 +159,34 @@ impl AppStore {
             .position(|task| task.id == id)
             .ok_or_else(|| "找不到要更新的 DDL".to_string())?;
         next[index].is_done = is_done;
+        next[index].updated_at = timestamp();
+        let updated = next[index].clone();
+        write_json(&self.tasks_path, &next)?;
+        *tasks = next;
+        Ok(updated)
+    }
+
+    pub fn set_occurrence_done(&self, id: &str, date: &str, is_done: bool) -> Result<Task, String> {
+        NaiveDate::parse_from_str(date, "%Y-%m-%d")
+            .map_err(|_| "日期格式应为 YYYY-MM-DD".to_string())?;
+        let mut tasks = self
+            .tasks
+            .lock()
+            .map_err(|_| "任务数据锁已损坏".to_string())?;
+        let mut next = tasks.clone();
+        let index = next
+            .iter()
+            .position(|task| task.id == id)
+            .ok_or_else(|| "找不到要更新的 DDL".to_string())?;
+        if next[index].repeat.is_some() {
+            next[index]
+                .overrides
+                .entry(date.to_string())
+                .or_default()
+                .is_done = Some(is_done);
+        } else {
+            next[index].is_done = is_done;
+        }
         next[index].updated_at = timestamp();
         let updated = next[index].clone();
         write_json(&self.tasks_path, &next)?;
@@ -232,6 +271,46 @@ fn normalize_task_input(input: TaskInput) -> Result<(String, String, Option<Stri
     Ok((title.to_string(), due_date.to_string(), due_time))
 }
 
+fn validate_repeat(repeat: &Option<RepeatRule>, due_date: &str) -> Result<Option<RepeatRule>, String> {
+    let Some(rule) = repeat else {
+        return Ok(None);
+    };
+    if rule.freq != "weekly" {
+        return Err("目前仅支持每周重复".into());
+    }
+    if rule.interval == 0 {
+        return Err("重复间隔必须大于 0".into());
+    }
+    if rule.weekdays.is_empty() {
+        return Err("每周重复至少选择一个星期".into());
+    }
+    let mut weekdays = rule.weekdays.clone();
+    if weekdays.iter().any(|day| *day < 1 || *day > 7) {
+        return Err("星期取值应为 1–7".into());
+    }
+    weekdays.sort_unstable();
+    weekdays.dedup();
+    let until = match &rule.until {
+        Some(value) if !value.trim().is_empty() => {
+            let parsed = NaiveDate::parse_from_str(value, "%Y-%m-%d")
+                .map_err(|_| "结束日期格式应为 YYYY-MM-DD".to_string())?;
+            let start = NaiveDate::parse_from_str(due_date, "%Y-%m-%d")
+                .map_err(|_| "截止日期格式应为 YYYY-MM-DD".to_string())?;
+            if parsed < start {
+                return Err("结束日期不能早于开始日期".into());
+            }
+            Some(parsed.format("%Y-%m-%d").to_string())
+        }
+        _ => None,
+    };
+    Ok(Some(RepeatRule {
+        freq: rule.freq.clone(),
+        interval: rule.interval,
+        weekdays,
+        until,
+    }))
+}
+
 fn validate_settings(settings: &Settings) -> Result<(), String> {
     if !matches!(settings.theme.as_str(), "system" | "light" | "dark") {
         return Err("无效的主题设置".into());
@@ -309,6 +388,7 @@ mod tests {
             title: title.into(),
             due_date: date.into(),
             due_time: time.map(str::to_string),
+            repeat: None,
         }
     }
 
@@ -358,6 +438,61 @@ mod tests {
             .create_task(input("任务", "2026-11-18", Some("25:00")))
             .is_err());
         assert!(store.list_tasks().expect("列出任务").is_empty());
+    }
+
+    #[test]
+    fn weekly_repeat_occurrence_done_is_persisted() {
+        let dir = TestDir::new();
+        let store = AppStore::load(dir.0.clone()).expect("初始化存储");
+        let task = store
+            .create_task(TaskInput {
+                title: "实验室组会".into(),
+                due_date: "2026-11-18".into(),
+                due_time: Some("15:00".into()),
+                repeat: Some(RepeatRule {
+                    freq: "weekly".into(),
+                    interval: 1,
+                    weekdays: vec![3],
+                    until: None,
+                }),
+            })
+            .expect("创建重复任务");
+        store
+            .set_occurrence_done(&task.id, "2026-11-25", true)
+            .expect("完成某一次");
+        let reloaded = AppStore::load(dir.0.clone()).expect("重新读取存储");
+        let tasks = reloaded.list_tasks().expect("列出任务");
+        assert!(!tasks[0].is_done);
+        assert_eq!(
+            tasks[0].overrides.get("2026-11-25").unwrap().is_done,
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn invalid_repeat_is_rejected() {
+        let dir = TestDir::new();
+        let store = AppStore::load(dir.0.clone()).expect("初始化存储");
+        let base = TaskInput {
+            title: "组会".into(),
+            due_date: "2026-11-18".into(),
+            due_time: None,
+            repeat: Some(RepeatRule {
+                freq: "weekly".into(),
+                interval: 1,
+                weekdays: vec![],
+                until: None,
+            }),
+        };
+        assert!(store.create_task(base.clone()).is_err());
+        let mut daily = base.clone();
+        daily.repeat.as_mut().unwrap().freq = "daily".into();
+        daily.repeat.as_mut().unwrap().weekdays = vec![3];
+        assert!(store.create_task(daily).is_err());
+        let mut bad_until = base;
+        bad_until.repeat.as_mut().unwrap().weekdays = vec![3];
+        bad_until.repeat.as_mut().unwrap().until = Some("2026-11-01".into());
+        assert!(store.create_task(bad_until).is_err());
     }
 
     #[test]
