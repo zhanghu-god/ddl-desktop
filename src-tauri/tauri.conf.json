@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "DDL Board",
+  "version": "0.1.0",
+  "identifier": "com.ddlboard.desktop",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "appDirectoriesOverride": {
+      "config": "./data",
+      "data": "./data",
+      "localData": "./data/cache/webview2",
+      "cache": "./data/cache",
+      "log": "./data/logs"
+    },
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "DDL Board",
+        "width": 1180,
+        "height": 780,
+        "minWidth": 760,
+        "minHeight": 560,
+        "center": true,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' data:; style-src 'self'; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": false,
+    "targets": [],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
