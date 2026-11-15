@@ -15,6 +15,7 @@
 - 待办与已完成任务分别配色
 - 浅色、深色、跟随系统三种主题
 - 所有修改直接保存到本地 JSON 文件
+- 运行日志写入自身 `data/logs`（按天分文件，含 panic 背栈），由常驻管理器定时清理
 - 关于面板手动检查更新，启动时自动检查更新
 - 自动下载 GitHub Release 便携包并校验 SHA-256，重启后完成替换
 
@@ -24,7 +25,7 @@
 
 从 [Releases](https://github.com/zhanghu-god/ddl-desktop/releases) 下载：
 
-`ddl-desktop_0.3.2_x64-portable.zip`
+`ddl-desktop_0.3.3_x64-portable.zip`
 
 1. 将 ZIP 完整解压到一个有写入权限的目录。
 2. 双击 `ddl-desktop.exe`。
@@ -136,4 +137,4 @@ assets\                    # 图标源文件
 
 ## 版本与发布
 
-当前版本：`0.3.2`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。
+当前版本：`0.3.3`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。

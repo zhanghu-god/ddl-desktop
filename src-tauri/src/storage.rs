@@ -94,6 +94,7 @@ impl AppStore {
         next.push(task.clone());
         write_json(&self.tasks_path, &next)?;
         *tasks = next;
+        portable_kit::logging::info(&format!("task created id={} title={}", task.id, task.title));
         Ok(task)
     }
 
@@ -171,6 +172,7 @@ impl AppStore {
         }
         write_json(&self.tasks_path, &next)?;
         *tasks = next;
+        portable_kit::logging::info(&format!("task deleted id={id}"));
         Ok(())
     }
 

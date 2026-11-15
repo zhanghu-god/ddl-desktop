@@ -11,6 +11,13 @@ use storage::AppStore;
 pub fn run() {
     let data_dir = storage::portable_data_dir().expect("无法定位程序目录");
     storage::configure_webview_data_dir(&data_dir).expect("无法创建便携缓存目录");
+    let _ = portable_kit::logging::init("ddl-desktop");
+    portable_kit::logging::install_panic_hook();
+    portable_kit::logging::info(&format!(
+        "startup version={} exe={:?}",
+        env!("CARGO_PKG_VERSION"),
+        std::env::current_exe().ok()
+    ));
     update::cleanup_leftover(&data_dir);
     let store = AppStore::load(data_dir).expect("无法初始化本地数据");
 
