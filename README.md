@@ -24,7 +24,7 @@
 
 从 [Releases](https://github.com/zhanghu-god/ddl-desktop/releases) 下载：
 
-`ddl-desktop_0.3.1_x64-portable.zip`
+`ddl-desktop_0.3.2_x64-portable.zip`
 
 1. 将 ZIP 完整解压到一个有写入权限的目录。
 2. 双击 `ddl-desktop.exe`。
@@ -136,4 +136,4 @@ assets\                    # 图标源文件
 
 ## 版本与发布
 
-当前版本：`0.3.1`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。
+当前版本：`0.3.2`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。
