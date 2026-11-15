@@ -1,10 +1,9 @@
 /* DDL Board —— 零构建前端，直接调用 Rust/Tauri 命令。 */
 
-const invoke = window.__TAURI__?.core?.invoke;
-const $ = (id) => document.getElementById(id);
+const { invoke, $, errorText, systemDark, requireInvoke } = window.PKUI;
+const showToast = (message, type, duration) => window.PKUI.toast(message, type, duration);
 const COLORS = ['blue', 'green', 'orange', 'purple', 'teal', 'gray'];
 const COLOR_NAMES = { blue: '蓝色', green: '绿色', orange: '橙色', purple: '紫色', teal: '青色', gray: '灰色' };
-const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
 
 const state = {
   tasks: [],
@@ -18,18 +17,6 @@ const state = {
   updateInfo: null,
   updateBusy: false,
 };
-let toastTimer = null;
-
-function errorText(error) {
-  if (typeof error === 'string') return error;
-  return error?.message || String(error);
-}
-
-function requireInvoke() {
-  if (!invoke) throw new Error('未检测到 Tauri 运行环境，请从 DDL Board 程序启动。');
-  return invoke;
-}
-
 function pad(number) {
   return String(number).padStart(2, '0');
 }
@@ -87,14 +74,6 @@ function isOverdue(occ) {
     return new Date(`${occ.date}T${occ.dueTime}:00`).getTime() < Date.now();
   }
   return occ.date < todayKey();
-}
-
-function showToast(message, type = 'info', duration = 2600) {
-  clearTimeout(toastTimer);
-  const toast = $('toast');
-  toast.textContent = message;
-  toast.className = `toast show${type === 'error' ? ' error' : ''}`;
-  toastTimer = setTimeout(() => { toast.className = 'toast'; }, duration);
 }
 
 function setStatus(message, type = 'ready') {
@@ -356,8 +335,7 @@ async function deleteTask(event) {
 
 function applySettings() {
   const settings = state.settings;
-  const dark = settings.theme === 'dark' || (settings.theme === 'system' && systemDark.matches);
-  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  window.PKUI.applyTheme(settings.theme);
   COLORS.forEach((color) => {
     document.body.classList.remove(`tone-todo-${color}`, `tone-done-${color}`);
   });
