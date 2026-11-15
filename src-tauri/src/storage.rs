@@ -12,24 +12,10 @@ use uuid::Uuid;
 
 use crate::models::{RepeatRule, Settings, StorageInfo, Task, TaskInput};
 
+// 便携数据隔离复用公共 crate，避免各项目重复实现。
+pub use portable_kit::portable::{configure_webview_data_dir, portable_data_dir};
+
 const COLORS: [&str; 6] = ["blue", "green", "orange", "purple", "teal", "gray"];
-
-/// 只使用程序所在目录，不回退到 APPDATA 等系统位置。
-pub fn portable_data_dir() -> Result<PathBuf, String> {
-    let exe = std::env::current_exe().map_err(|e| format!("无法获取程序路径：{e}"))?;
-    let exe_dir = exe
-        .parent()
-        .ok_or_else(|| "程序路径没有父目录".to_string())?;
-    Ok(exe_dir.join("data"))
-}
-
-/// WebView2 默认会把缓存写入系统用户目录，这里在创建窗口前改为便携目录。
-pub fn configure_webview_data_dir(data_dir: &Path) -> Result<(), String> {
-    let cache_dir = data_dir.join("cache").join("webview2");
-    fs::create_dir_all(&cache_dir).map_err(|e| format!("无法创建 WebView2 缓存目录：{e}"))?;
-    std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", cache_dir);
-    Ok(())
-}
 
 pub struct AppStore {
     data_dir: PathBuf,
@@ -82,10 +68,7 @@ impl AppStore {
     }
 
     pub fn list_tasks(&self) -> Result<Vec<Task>, String> {
-        let tasks = self
-            .tasks
-            .lock()
-            .map_err(|_| "任务数据锁已损坏".to_string())?;
+        let tasks = self.tasks.lock().map_err(|_| "任务数据锁已损坏".to_string())?;
         Ok(tasks.clone())
     }
 
@@ -106,10 +89,7 @@ impl AppStore {
             overrides: BTreeMap::new(),
         };
 
-        let mut tasks = self
-            .tasks
-            .lock()
-            .map_err(|_| "任务数据锁已损坏".to_string())?;
+        let mut tasks = self.tasks.lock().map_err(|_| "任务数据锁已损坏".to_string())?;
         let mut next = tasks.clone();
         next.push(task.clone());
         write_json(&self.tasks_path, &next)?;
@@ -121,10 +101,7 @@ impl AppStore {
         let repeat_input = input.repeat.clone();
         let (title, due_date, due_time) = normalize_task_input(input)?;
         let repeat = validate_repeat(&repeat_input, &due_date)?;
-        let mut tasks = self
-            .tasks
-            .lock()
-            .map_err(|_| "任务数据锁已损坏".to_string())?;
+        let mut tasks = self.tasks.lock().map_err(|_| "任务数据锁已损坏".to_string())?;
         let mut next = tasks.clone();
         let index = next
             .iter()
@@ -149,10 +126,7 @@ impl AppStore {
     }
 
     pub fn set_task_done(&self, id: &str, is_done: bool) -> Result<Task, String> {
-        let mut tasks = self
-            .tasks
-            .lock()
-            .map_err(|_| "任务数据锁已损坏".to_string())?;
+        let mut tasks = self.tasks.lock().map_err(|_| "任务数据锁已损坏".to_string())?;
         let mut next = tasks.clone();
         let index = next
             .iter()
@@ -169,21 +143,14 @@ impl AppStore {
     pub fn set_occurrence_done(&self, id: &str, date: &str, is_done: bool) -> Result<Task, String> {
         NaiveDate::parse_from_str(date, "%Y-%m-%d")
             .map_err(|_| "日期格式应为 YYYY-MM-DD".to_string())?;
-        let mut tasks = self
-            .tasks
-            .lock()
-            .map_err(|_| "任务数据锁已损坏".to_string())?;
+        let mut tasks = self.tasks.lock().map_err(|_| "任务数据锁已损坏".to_string())?;
         let mut next = tasks.clone();
         let index = next
             .iter()
             .position(|task| task.id == id)
             .ok_or_else(|| "找不到要更新的 DDL".to_string())?;
         if next[index].repeat.is_some() {
-            next[index]
-                .overrides
-                .entry(date.to_string())
-                .or_default()
-                .is_done = Some(is_done);
+            next[index].overrides.entry(date.to_string()).or_default().is_done = Some(is_done);
         } else {
             next[index].is_done = is_done;
         }
@@ -195,10 +162,7 @@ impl AppStore {
     }
 
     pub fn delete_task(&self, id: &str) -> Result<(), String> {
-        let mut tasks = self
-            .tasks
-            .lock()
-            .map_err(|_| "任务数据锁已损坏".to_string())?;
+        let mut tasks = self.tasks.lock().map_err(|_| "任务数据锁已损坏".to_string())?;
         let mut next = tasks.clone();
         let old_len = next.len();
         next.retain(|task| task.id != id);
@@ -211,32 +175,19 @@ impl AppStore {
     }
 
     pub fn settings(&self) -> Settings {
-        self.settings
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .clone()
+        self.settings.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).clone()
     }
 
     pub fn update_settings(&self, settings: Settings) -> Result<Settings, String> {
         validate_settings(&settings)?;
         write_json(&self.settings_path, &settings)?;
-        *self
-            .settings
-            .lock()
-            .map_err(|_| "配置数据锁已损坏".to_string())? = settings.clone();
+        *self.settings.lock().map_err(|_| "配置数据锁已损坏".to_string())? = settings.clone();
         Ok(settings)
     }
 
     pub fn storage_info(&self) -> Result<StorageInfo, String> {
-        let task_count = self
-            .tasks
-            .lock()
-            .map_err(|_| "任务数据锁已损坏".to_string())?
-            .len();
-        Ok(StorageInfo {
-            data_dir: self.data_dir.to_string_lossy().into_owned(),
-            task_count,
-        })
+        let task_count = self.tasks.lock().map_err(|_| "任务数据锁已损坏".to_string())?.len();
+        Ok(StorageInfo { data_dir: self.data_dir.to_string_lossy().into_owned(), task_count })
     }
 }
 
@@ -271,7 +222,10 @@ fn normalize_task_input(input: TaskInput) -> Result<(String, String, Option<Stri
     Ok((title.to_string(), due_date.to_string(), due_time))
 }
 
-fn validate_repeat(repeat: &Option<RepeatRule>, due_date: &str) -> Result<Option<RepeatRule>, String> {
+fn validate_repeat(
+    repeat: &Option<RepeatRule>,
+    due_date: &str,
+) -> Result<Option<RepeatRule>, String> {
     let Some(rule) = repeat else {
         return Ok(None);
     };
@@ -303,12 +257,7 @@ fn validate_repeat(repeat: &Option<RepeatRule>, due_date: &str) -> Result<Option
         }
         _ => None,
     };
-    Ok(Some(RepeatRule {
-        freq: rule.freq.clone(),
-        interval: rule.interval,
-        weekdays,
-        until,
-    }))
+    Ok(Some(RepeatRule { freq: rule.freq.clone(), interval: rule.interval, weekdays, until }))
 }
 
 fn validate_settings(settings: &Settings) -> Result<(), String> {
@@ -353,10 +302,7 @@ where
         Err(first_error) if path.exists() => {
             fs::remove_file(path).map_err(|e| format!("替换 {} 失败：{e}", path.display()))?;
             fs::rename(&temp_path, path).map_err(|e| {
-                format!(
-                    "替换 {} 失败：{e}（首次错误：{first_error}）",
-                    path.display()
-                )
+                format!("替换 {} 失败：{e}（首次错误：{first_error}）", path.display())
             })
         }
         Err(e) => Err(format!("保存 {} 失败：{e}", path.display())),
@@ -405,9 +351,8 @@ mod tests {
         assert_eq!(task.title, "多媒体 hw6");
         assert!(!task.is_done);
 
-        let updated = store
-            .update_task(&task.id, input("多媒体 hw7", "2026-11-19", None))
-            .expect("修改任务");
+        let updated =
+            store.update_task(&task.id, input("多媒体 hw7", "2026-11-19", None)).expect("修改任务");
         assert_eq!(updated.due_date, "2026-11-19");
         assert_eq!(updated.due_time, None);
         assert_eq!(updated.created_at, task.created_at);
@@ -431,12 +376,8 @@ mod tests {
         let dir = TestDir::new();
         let store = AppStore::load(dir.0.clone()).expect("初始化存储");
         assert!(store.create_task(input(" ", "2026-11-18", None)).is_err());
-        assert!(store
-            .create_task(input("任务", "2026-02-30", None))
-            .is_err());
-        assert!(store
-            .create_task(input("任务", "2026-11-18", Some("25:00")))
-            .is_err());
+        assert!(store.create_task(input("任务", "2026-02-30", None)).is_err());
+        assert!(store.create_task(input("任务", "2026-11-18", Some("25:00"))).is_err());
         assert!(store.list_tasks().expect("列出任务").is_empty());
     }
 
@@ -457,16 +398,11 @@ mod tests {
                 }),
             })
             .expect("创建重复任务");
-        store
-            .set_occurrence_done(&task.id, "2026-11-25", true)
-            .expect("完成某一次");
+        store.set_occurrence_done(&task.id, "2026-11-25", true).expect("完成某一次");
         let reloaded = AppStore::load(dir.0.clone()).expect("重新读取存储");
         let tasks = reloaded.list_tasks().expect("列出任务");
         assert!(!tasks[0].is_done);
-        assert_eq!(
-            tasks[0].overrides.get("2026-11-25").unwrap().is_done,
-            Some(true)
-        );
+        assert_eq!(tasks[0].overrides.get("2026-11-25").unwrap().is_done, Some(true));
     }
 
     #[test]
@@ -508,10 +444,7 @@ mod tests {
         let reloaded = AppStore::load(dir.0.clone()).expect("重新读取存储");
         assert_eq!(reloaded.settings(), settings);
 
-        let invalid = Settings {
-            theme: "unknown".into(),
-            ..Settings::default()
-        };
+        let invalid = Settings { theme: "unknown".into(), ..Settings::default() };
         assert!(reloaded.update_settings(invalid).is_err());
     }
 }

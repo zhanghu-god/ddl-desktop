@@ -1,8 +1,8 @@
 use tauri::{AppHandle, State};
 
-use crate::models::{AppInfo, PreparedUpdate, Settings, StorageInfo, Task, TaskInput, UpdateInfo};
+use crate::models::{AppInfo, Settings, StorageInfo, Task, TaskInput};
 use crate::storage::AppStore;
-use crate::update;
+use crate::update::{self, PreparedUpdate, UpdateInfo};
 
 #[tauri::command]
 pub fn get_tasks(store: State<'_, AppStore>) -> Result<Vec<Task>, String> {
