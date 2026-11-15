@@ -395,6 +395,15 @@ html[data-theme="dark"] body.tone-done-gray { --done-bg: #32353a; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .toast.error { border-color: var(--danger); color: var(--danger); }
 
+.about-modal { width: min(460px, calc(100vw - 32px)); }
+.about-body { display: flex; flex-direction: column; gap: 10px; }
+.about-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.about-row > span:first-child { color: var(--muted); font-size: 12px; flex: 0 0 auto; }
+.about-value { min-width: 0; text-align: right; font-size: 12px; overflow-wrap: anywhere; }
+.about-path { color: var(--muted); }
+.update-status { min-height: 18px; margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.update-status.error { color: var(--danger); }
+
 @media (pointer: coarse) {
   .add-task { opacity: 1; }
   .delete-task { visibility: visible; }

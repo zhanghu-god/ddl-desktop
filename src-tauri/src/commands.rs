@@ -1,7 +1,8 @@
-use tauri::State;
+use tauri::{AppHandle, State};
 
-use crate::models::{Settings, StorageInfo, Task, TaskInput};
+use crate::models::{AppInfo, PreparedUpdate, Settings, StorageInfo, Task, TaskInput, UpdateInfo};
 use crate::storage::AppStore;
+use crate::update;
 
 #[tauri::command]
 pub fn get_tasks(store: State<'_, AppStore>) -> Result<Vec<Task>, String> {
@@ -49,4 +50,34 @@ pub fn save_settings(settings: Settings, store: State<'_, AppStore>) -> Result<S
 #[tauri::command]
 pub fn get_storage_info(store: State<'_, AppStore>) -> Result<StorageInfo, String> {
     store.storage_info()
+}
+
+#[tauri::command]
+pub fn get_app_info(store: State<'_, AppStore>) -> AppInfo {
+    AppInfo {
+        version: update::current_version().to_string(),
+        repo: update::REPO.to_string(),
+        data_dir: store.data_dir().to_string_lossy().into_owned(),
+    }
+}
+
+#[tauri::command]
+pub async fn check_update() -> Result<UpdateInfo, String> {
+    update::check_update().await
+}
+
+#[tauri::command]
+pub async fn prepare_update(
+    info: UpdateInfo,
+    store: State<'_, AppStore>,
+) -> Result<PreparedUpdate, String> {
+    let data_dir = store.data_dir().to_path_buf();
+    update::prepare_update(&data_dir, &info).await
+}
+
+#[tauri::command]
+pub fn apply_update_and_restart(app: AppHandle, store: State<'_, AppStore>) -> Result<(), String> {
+    update::apply_update_and_restart(store.data_dir())?;
+    app.exit(0);
+    Ok(())
 }

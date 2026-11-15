@@ -3,6 +3,7 @@
 mod commands;
 mod models;
 mod storage;
+mod update;
 
 use storage::AppStore;
 
@@ -10,6 +11,7 @@ use storage::AppStore;
 pub fn run() {
     let data_dir = storage::portable_data_dir().expect("无法定位程序目录");
     storage::configure_webview_data_dir(&data_dir).expect("无法创建便携缓存目录");
+    update::cleanup_leftover(&data_dir);
     let store = AppStore::load(data_dir).expect("无法初始化本地数据");
 
     tauri::Builder::default()
@@ -23,6 +25,10 @@ pub fn run() {
             commands::get_settings,
             commands::save_settings,
             commands::get_storage_info,
+            commands::get_app_info,
+            commands::check_update,
+            commands::prepare_update,
+            commands::apply_update_and_restart,
         ])
         .run(tauri::generate_context!())
         .expect("启动 Tauri 应用失败");

@@ -14,6 +14,9 @@ const state = {
   deletingId: null,
   saving: false,
   deleting: false,
+  appInfo: null,
+  updateInfo: null,
+  updateBusy: false,
 };
 let toastTimer = null;
 
@@ -333,6 +336,69 @@ async function refreshStorageInfo() {
   }
 }
 
+async function loadAppInfo() {
+  try {
+    state.appInfo = await requireInvoke()('get_app_info');
+    $('about-version').textContent = `v${state.appInfo.version}`;
+    $('about-repo').textContent = state.appInfo.repo;
+    $('about-data-dir').textContent = state.appInfo.dataDir;
+    $('about-data-dir').title = state.appInfo.dataDir;
+  } catch (error) {
+    $('about-version').textContent = '未知';
+  }
+}
+
+function openAbout() {
+  toggleAppearance(false);
+  loadAppInfo();
+  $('about-dialog').showModal();
+}
+
+function setUpdateStatus(text, isError = false) {
+  const status = $('update-status');
+  status.textContent = text;
+  status.classList.toggle('error', isError);
+}
+
+async function checkForUpdate({ manual = false } = {}) {
+  if (state.updateBusy) return;
+  state.updateBusy = true;
+  $('check-update-btn').disabled = true;
+  setUpdateStatus('正在检查更新…');
+  try {
+    const info = await requireInvoke()('check_update');
+    state.updateInfo = info;
+    if (!info.hasUpdate) {
+      setUpdateStatus(`已是最新版本 v${info.currentVersion}`);
+      if (manual) showToast('已是最新版本');
+      return;
+    }
+    setUpdateStatus(`发现新版本 v${info.latestVersion}，正在下载并校验…`);
+    const prepared = await requireInvoke()('prepare_update', { info });
+    setUpdateStatus(`新版本 v${prepared.version} 已准备好`);
+    $('update-version').textContent = `v${prepared.version}`;
+    $('update-dialog').showModal();
+  } catch (error) {
+    setUpdateStatus(`更新失败：${errorText(error)}`, true);
+    if (manual) showToast(`更新失败：${errorText(error)}`, 'error', 5000);
+  } finally {
+    state.updateBusy = false;
+    $('check-update-btn').disabled = false;
+  }
+}
+
+async function restartForUpdate() {
+  $('update-restart-btn').disabled = true;
+  $('update-later-btn').disabled = true;
+  try {
+    await requireInvoke()('apply_update_and_restart');
+  } catch (error) {
+    $('update-restart-btn').disabled = false;
+    $('update-later-btn').disabled = false;
+    showToast(`重启更新失败：${errorText(error)}`, 'error', 5000);
+  }
+}
+
 function bindEvents() {
   $('prev-month').addEventListener('click', () => {
     state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth() - 1, 1);
@@ -364,6 +430,17 @@ function bindEvents() {
     if (event.target === $('confirm-dialog')) $('confirm-dialog').close();
   });
   $('appearance-btn').addEventListener('click', () => toggleAppearance());
+  $('about-btn').addEventListener('click', openAbout);
+  $('close-about-dialog').addEventListener('click', () => $('about-dialog').close());
+  $('about-dialog').addEventListener('click', (event) => {
+    if (event.target === $('about-dialog')) $('about-dialog').close();
+  });
+  $('check-update-btn').addEventListener('click', () => checkForUpdate({ manual: true }));
+  $('update-later-btn').addEventListener('click', () => {
+    $('update-dialog').close();
+    showToast('更新已保留，可稍后在“关于”中重启更新');
+  });
+  $('update-restart-btn').addEventListener('click', restartForUpdate);
   document.querySelectorAll('[data-theme-choice]').forEach((button) => {
     button.addEventListener('click', () => saveAppearance({ theme: button.dataset.themeChoice }));
   });
@@ -376,7 +453,7 @@ function bindEvents() {
     if (event.key === 'Escape') toggleAppearance(false);
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {
       event.preventDefault();
-      if (!$('task-dialog').open && !$('confirm-dialog').open) openTaskDialog();
+      if (!document.querySelector('dialog[open]')) openTaskDialog();
     }
   });
   systemDark.addEventListener('change', () => {
@@ -399,6 +476,8 @@ async function init() {
     applySettings();
     render();
     await refreshStorageInfo();
+    await loadAppInfo();
+    checkForUpdate({ manual: false });
   } catch (error) {
     setStatus('本地数据读取失败', 'error');
     showToast(`初始化失败：${errorText(error)}`, 'error', 8000);

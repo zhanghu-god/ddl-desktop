@@ -74,6 +74,10 @@ impl AppStore {
         })
     }
 
+    pub fn data_dir(&self) -> &Path {
+        &self.data_dir
+    }
+
     pub fn list_tasks(&self) -> Result<Vec<Task>, String> {
         let tasks = self
             .tasks

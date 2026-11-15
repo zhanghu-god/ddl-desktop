@@ -46,3 +46,32 @@ pub struct StorageInfo {
     pub data_dir: String,
     pub task_count: usize,
 }
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AppInfo {
+    pub version: String,
+    pub repo: String,
+    pub data_dir: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateInfo {
+    pub current_version: String,
+    pub latest_version: String,
+    pub has_update: bool,
+    pub release_url: String,
+    pub asset_name: String,
+    pub asset_url: String,
+    pub asset_size: u64,
+    pub asset_digest: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PreparedUpdate {
+    pub version: String,
+    pub asset_name: String,
+    pub already_staged: bool,
+}

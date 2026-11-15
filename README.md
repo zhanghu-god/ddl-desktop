@@ -14,6 +14,8 @@
 - 待办与已完成任务分别配色
 - 浅色、深色、跟随系统三种主题
 - 所有修改直接保存到本地 JSON 文件
+- 关于面板手动检查更新，启动时自动检查更新
+- 自动下载 GitHub Release 便携包并校验 SHA-256，重启后完成替换
 
 这是首个聚焦核心流程的版本，暂不支持周视图、拖拽改期、重复任务、云同步或 Super Productivity 数据导入。
 
@@ -21,7 +23,7 @@
 
 从 [Releases](https://github.com/zhanghu-god/ddl-desktop/releases) 下载：
 
-`ddl-desktop_0.1.0_x64-portable.zip`
+`ddl-desktop_0.2.0_x64-portable.zip`
 
 1. 将 ZIP 完整解压到一个有写入权限的目录。
 2. 双击 `ddl-desktop.exe`。
@@ -38,7 +40,8 @@ DDL Board\
 └─ data\
    ├─ tasks.json         # 全部 DDL，可读 JSON
    ├─ config.json        # 主题与配色
-   └─ cache\webview2\    # 首次运行后生成的界面缓存
+   ├─ cache\webview2\    # 首次运行后生成的界面缓存
+   └─ update\            # 自动更新下载暂存，更新完成后可自动清理
 ```
 
 - 数据、配置和 WebView2 缓存始终以 exe 所在目录为基准，**不会回退到 `%APPDATA%` 或其他系统应用目录**。
@@ -46,6 +49,15 @@ DDL Board\
 - 备份任务只需复制 `data\tasks.json`；迁移整个应用则复制整个文件夹。
 - `data\cache` 可在程序关闭后删除，任务与配置不受影响。
 - 删除整个文件夹即可移除应用及其数据；如有需要，请先备份。
+
+## 自动更新
+
+- 启动时会自动检查 GitHub 最新 Release；也可以在“关于”面板点击“检查更新”。
+- 发现新版本后，自动下载便携 ZIP，校验大小和 SHA-256，并解压暂存到 `data\update`。
+- 更新就绪后弹出提示，选择“现在重启”会退出当前程序，由后台脚本替换 exe 和 README，然后重新启动。
+- 选择“稍后”会保留已下载更新，下次启动时继续提示。
+- 更新只替换程序文件，不覆盖 `data\tasks.json`、`data\config.json` 等用户数据。
+- 更新检查需要访问 GitHub API；网络失败时不影响本地任务管理。
 
 ## 数据格式
 
@@ -121,4 +133,4 @@ assets\                    # 图标源文件
 
 ## 版本与发布
 
-当前版本：`0.1.0`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。
+当前版本：`0.2.0`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。
