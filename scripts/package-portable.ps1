@@ -15,7 +15,7 @@ if (Test-Path -LiteralPath $WsExe) { $Exe = $WsExe }
 $ReleaseDir = Join-Path $Root "release"
 $Zip = Join-Path $ReleaseDir "ddl-desktop_${Version}_x64-portable.zip"
 $WorkDir = Join-Path $ReleaseDir ("staging-" + [guid]::NewGuid().ToString("N"))
-$Stage = Join-Path $WorkDir "DDL Board"
+$Stage = Join-Path $WorkDir $Config.productName
 
 function Write-Utf8Json([string]$Path, [string]$Text) {
   [System.IO.File]::WriteAllText($Path, $Text, (New-Object System.Text.UTF8Encoding($false)))
