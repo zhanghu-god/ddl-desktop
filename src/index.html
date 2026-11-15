@@ -146,26 +146,26 @@
   </dialog>
 
   <dialog id="about-dialog" class="modal about-modal">
-    <div class="modal-header">
-      <div>
-        <span class="eyebrow">ABOUT</span>
-        <h2>关于 DDL Board</h2>
+    <button id="close-about-dialog" class="icon-button about-close" type="button" aria-label="关闭">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+    </button>
+    <div class="about-hero">
+      <img class="about-icon" src="./icon.svg" alt="">
+      <div class="about-title">
+        <h2>DDL Board</h2>
+        <span id="about-version" class="version-badge">v…</span>
       </div>
-      <button id="close-about-dialog" class="icon-button" type="button" aria-label="关闭">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
-      </button>
     </div>
-    <div class="about-body">
-      <div class="about-row"><span>当前版本</span><strong id="about-version">…</strong></div>
+    <p class="about-desc">独立、离线、便携的 DDL 月历。</p>
+    <div class="about-meta">
       <div class="about-row"><span>项目仓库</span><span id="about-repo" class="about-value"></span></div>
       <div class="about-row"><span>数据目录</span><span id="about-data-dir" class="about-value about-path"></span></div>
-      <p class="field-hint">自动更新只替换程序文件，不会覆盖 data 中的任务和配置。</p>
+    </div>
+    <div class="about-update">
       <p id="update-status" class="update-status" role="status"></p>
+      <button id="check-update-btn" class="button primary about-check" type="button">检查更新</button>
     </div>
-    <div class="modal-actions">
-      <span class="action-spacer"></span>
-      <button id="check-update-btn" class="button primary" type="button">检查更新</button>
-    </div>
+    <p class="field-hint about-note">自动更新只替换程序文件，不会覆盖 data 中的任务和配置。</p>
   </dialog>
 
   <dialog id="update-dialog" class="modal confirm-modal">
