@@ -2,6 +2,8 @@
 # 用法：powershell -File scripts/build-android.ps1
 $ErrorActionPreference = 'Stop'
 $env:RUSTUP_TOOLCHAIN = 'stable-x86_64-pc-windows-msvc'
+$env:CARGO_PROFILE_DEV_DEBUG = '0'
+$env:CARGO_PROFILE_DEV_STRIP = 'symbols'
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $sdk = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
 $env:ANDROID_HOME = $sdk
