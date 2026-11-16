@@ -420,14 +420,23 @@ html[data-theme="dark"] .weekday-btn.selected { color: #172039; }
   .storage-path { display: none; }
 }
 
-/* ---------- WebDAV Õ¨≤Ω√Ê∞Â ---------- */
+/* ---------- WebDAV ÂêåÊ≠•Èù¢Êùø ---------- */
 .check-field { display: flex; align-items: center; gap: 9px; font-size: 13px; cursor: pointer; }
 .check-field input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
-.sync-modal { width: min(480px, calc(100vw - 24px)); }
-.sync-modal .field, .sync-modal .check-field { margin-top: 10px; }
-.sync-actions { flex-wrap: wrap; }
+.sync-modal { width: min(480px, calc(100vw - 24px)); padding: 22px; }
+.sync-modal .modal-header { margin-bottom: 12px; }
+.sync-modal .field-hint { margin: 0 0 4px; line-height: 1.7; }
+.sync-modal .check-field { margin-top: 12px; }
+.sync-modal .field { margin-top: 14px; }
+.sync-modal .field-row { gap: 12px; }
+.sync-actions {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
 
-/* ---------- “∆∂Ø∂À  ≈‰ ---------- */
+/* ---------- ÁßªÂä®Á´ØÈÄÇÈÖç ---------- */
 @media (pointer: coarse) {
   .add-task { opacity: 1; }
   .delete-task { opacity: 1; }
@@ -445,6 +454,7 @@ html[data-theme="dark"] .weekday-btn.selected { color: #172039; }
   .task-title { font-size: 10px; }
   .status-bar { font-size: 11px; }
   .storage-path { display: none; }
-  .field-row { flex-direction: column; }
+  .field-row { grid-template-columns: 1fr; }
   .modal { width: calc(100vw - 16px); }
+  .sync-modal { padding: 18px; }
 }
