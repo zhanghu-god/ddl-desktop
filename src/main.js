@@ -2,6 +2,7 @@
 
 const { invoke, $, errorText, systemDark, requireInvoke } = window.PKUI;
 const showToast = (message, type, duration) => window.PKUI.toast(message, type, duration);
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const COLORS = ['blue', 'green', 'orange', 'purple', 'teal', 'gray'];
 const COLOR_NAMES = { blue: '蓝色', green: '绿色', orange: '橙色', purple: '紫色', teal: '青色', gray: '灰色' };
 
@@ -439,6 +440,13 @@ async function checkForUpdate({ manual = false } = {}) {
       if (manual) showToast('已是最新版本');
       return;
     }
+    // 手机端无法自替换 exe，打开下载页安装新 APK。
+    if (isMobile) {
+      $('mobile-update-version').textContent = `v${info.latestVersion}`;
+      setUpdateStatus(`发现新版本 v${info.latestVersion}`);
+      $('mobile-update-dialog').showModal();
+      return;
+    }
     setUpdateStatus(`发现新版本 v${info.latestVersion}，正在下载并校验…`);
     const prepared = await requireInvoke()('prepare_update', { info });
     setUpdateStatus(`新版本 v${prepared.version} 已准备好`);
@@ -462,6 +470,20 @@ async function restartForUpdate() {
     $('update-restart-btn').disabled = false;
     $('update-later-btn').disabled = false;
     showToast(`重启更新失败：${errorText(error)}`, 'error', 5000);
+  }
+}
+
+async function openMobileUpdate() {
+  $('mobile-update-open').disabled = true;
+  try {
+    const url = state.updateInfo?.releaseUrl;
+    if (!url) throw new Error('缺少下载地址');
+    await requireInvoke()('open_url', { url });
+    $('mobile-update-dialog').close();
+  } catch (error) {
+    showToast(`打开下载页失败：${errorText(error)}`, 'error');
+  } finally {
+    $('mobile-update-open').disabled = false;
   }
 }
 
@@ -629,6 +651,8 @@ function bindEvents() {
     showToast('更新已保留，可稍后在“关于”中重启更新');
   });
   $('update-restart-btn').addEventListener('click', restartForUpdate);
+  $('mobile-update-later').addEventListener('click', () => $('mobile-update-dialog').close());
+  $('mobile-update-open').addEventListener('click', openMobileUpdate);
   document.querySelectorAll('[data-theme-choice]').forEach((button) => {
     button.addEventListener('click', () => saveAppearance({ theme: button.dataset.themeChoice }));
   });

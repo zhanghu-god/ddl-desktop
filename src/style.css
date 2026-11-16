@@ -458,3 +458,4 @@ html[data-theme="dark"] .weekday-btn.selected { color: #172039; }
   .modal { width: calc(100vw - 16px); }
   .sync-modal { padding: 18px; }
 }
+.mobile-update { padding: 22px; }

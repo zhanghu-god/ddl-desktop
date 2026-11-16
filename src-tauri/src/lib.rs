@@ -52,6 +52,7 @@ fn try_run() -> Result<(), String> {
     }
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // 桌面：exe 同级 data（便携）；移动端：系统应用数据目录（非便携）。
             let data_dir = if cfg!(any(target_os = "android", target_os = "ios")) {
@@ -123,6 +124,7 @@ fn try_run() -> Result<(), String> {
             commands::sync_test,
             commands::sync_backup,
             commands::sync_restore,
+            commands::open_url,
         ])
         .run(context)
         .map_err(|e| e.to_string())
