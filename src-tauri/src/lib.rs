@@ -24,7 +24,7 @@ pub fn run() {
                 storage::configure_webview_data_dir(&data_dir)?;
                 update::cleanup_leftover(&data_dir);
             }
-            let _ = portable_kit::logging::init("ddl-desktop");
+            let _ = portable_kit::logging::init_at(&data_dir, "ddl-desktop");
             portable_kit::logging::info(&format!(
                 "startup version={} data_dir={}",
                 env!("CARGO_PKG_VERSION"),

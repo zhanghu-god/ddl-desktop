@@ -1,0 +1,7 @@
+# Android 15+ 16KB 页面设备要求 native 库 16KB 对齐，否则启动即崩。
+# 仅影响 aarch64-linux-android 目标，桌面构建不受影响。
+[target.aarch64-linux-android]
+rustflags = [
+  "-C", "link-arg=-Wl,-z,max-page-size=16384",
+  "-C", "link-arg=-Wl,-z,common-page-size=16384",
+]

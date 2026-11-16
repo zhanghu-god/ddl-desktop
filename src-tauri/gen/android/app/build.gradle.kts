@@ -51,6 +51,12 @@ android {
     buildFeatures {
         buildConfig = true
     }
+    packaging {
+        jniLibs {
+            // 安装时解压 .so，避免未对齐直映射导致的启动崩溃；配合 16KB ELF 对齐。
+            useLegacyPackaging = true
+        }
+    }
 }
 
 kotlin {
