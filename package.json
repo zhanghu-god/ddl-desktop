@@ -1,0 +1,12 @@
+{
+  "name": "ddl-desktop",
+  "private": true,
+  "version": "0.3.6",
+  "description": "DDL Board - portable desktop + Android (Tauri 2)",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

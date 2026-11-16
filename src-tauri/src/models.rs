@@ -50,15 +50,46 @@ pub struct OccurrenceOverride {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub struct SyncSettings {
+    pub enabled: bool,
+    pub auto_sync: bool,
+    pub url: String,
+    pub username: String,
+    pub password: String,
+    pub root: String,
+}
+
+impl Default for SyncSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            auto_sync: true,
+            url: String::new(),
+            username: String::new(),
+            password: String::new(),
+            root: "rust-apps".into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub theme: String,
     pub todo_color: String,
     pub done_color: String,
+    #[serde(default)]
+    pub sync: SyncSettings,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { theme: "system".into(), todo_color: "blue".into(), done_color: "green".into() }
+        Self {
+            theme: "system".into(),
+            todo_color: "blue".into(),
+            done_color: "green".into(),
+            sync: SyncSettings::default(),
+        }
     }
 }
 

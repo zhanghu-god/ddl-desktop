@@ -470,6 +470,94 @@ function shiftMonth(delta) {
   render();
 }
 
+// ---------- WebDAV 多端同步 ----------
+
+function setSyncStatus(text, isError = false) {
+  const el = $('sync-status');
+  el.textContent = text;
+  el.classList.toggle('error', isError);
+}
+
+function readSyncFields() {
+  return {
+    enabled: $('sync-enabled').checked,
+    autoSync: $('sync-auto').checked,
+    url: $('sync-url').value.trim(),
+    username: $('sync-username').value.trim(),
+    password: $('sync-password').value,
+    root: $('sync-root').value.trim() || 'rust-apps',
+  };
+}
+
+function openSync() {
+  const s = state.settings.sync || {};
+  $('sync-enabled').checked = !!s.enabled;
+  $('sync-auto').checked = s.autoSync !== false;
+  $('sync-url').value = s.url || '';
+  $('sync-username').value = s.username || '';
+  $('sync-password').value = s.password || '';
+  $('sync-root').value = s.root || 'rust-apps';
+  setSyncStatus('');
+  $('sync-dialog').showModal();
+}
+
+async function saveSync() {
+  const previous = { ...state.settings };
+  state.settings = { ...state.settings, sync: readSyncFields() };
+  try {
+    state.settings = await requireInvoke()('save_settings', { settings: state.settings });
+    setSyncStatus('同步设置已保存');
+    return true;
+  } catch (error) {
+    state.settings = previous;
+    setSyncStatus(`保存失败：${errorText(error)}`, true);
+    return false;
+  }
+}
+
+async function syncTest() {
+  if (!(await saveSync())) return;
+  setSyncStatus('正在测试连接…');
+  try {
+    setSyncStatus(await requireInvoke()('sync_test'));
+  } catch (error) {
+    setSyncStatus(`连接失败：${errorText(error)}`, true);
+  }
+}
+
+async function syncBackup() {
+  if (!(await saveSync())) return;
+  setSyncStatus('正在备份到云…');
+  try {
+    const r = await requireInvoke()('sync_backup');
+    setSyncStatus(`备份完成：上传 ${r.uploaded} 个文件，跳过 ${r.skipped} 个`);
+    showToast('云备份完成');
+  } catch (error) {
+    setSyncStatus(`备份失败：${errorText(error)}`, true);
+  }
+}
+
+async function syncRestore() {
+  if (!(await saveSync())) return;
+  setSyncStatus('正在从云恢复…');
+  try {
+    const r = await requireInvoke()('sync_restore');
+    const [tasks, settings] = await Promise.all([
+      requireInvoke()('get_tasks'),
+      requireInvoke()('get_settings'),
+    ]);
+    state.tasks = tasks;
+    state.settings = settings;
+    applySettings();
+    render();
+    refreshStorageInfo();
+    setSyncStatus(`已恢复 ${r.downloaded} 个文件，旧数据已备份`);
+    showToast('已从云恢复');
+  } catch (error) {
+    setSyncStatus(`恢复失败：${errorText(error)}`, true);
+  }
+}
+
 function bindEvents() {
   $('prev-month').addEventListener('click', () => shiftMonth(-1));
   $('next-month').addEventListener('click', () => shiftMonth(1));
@@ -521,6 +609,15 @@ function bindEvents() {
     if (event.target === $('confirm-dialog')) $('confirm-dialog').close();
   });
   $('appearance-btn').addEventListener('click', () => toggleAppearance());
+  $('sync-btn').addEventListener('click', openSync);
+  $('close-sync-dialog').addEventListener('click', () => $('sync-dialog').close());
+  $('sync-dialog').addEventListener('click', (event) => {
+    if (event.target === $('sync-dialog')) $('sync-dialog').close();
+  });
+  $('sync-save-btn').addEventListener('click', saveSync);
+  $('sync-test-btn').addEventListener('click', syncTest);
+  $('sync-backup-btn').addEventListener('click', syncBackup);
+  $('sync-restore-btn').addEventListener('click', syncRestore);
   $('about-btn').addEventListener('click', openAbout);
   $('close-about-dialog').addEventListener('click', () => $('about-dialog').close());
   $('about-dialog').addEventListener('click', (event) => {

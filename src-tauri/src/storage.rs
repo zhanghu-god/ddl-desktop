@@ -67,6 +67,16 @@ impl AppStore {
         &self.data_dir
     }
 
+    /// 云恢复/导入后从磁盘重新加载任务与配置到内存。
+    pub fn reload(&self) -> Result<(), String> {
+        let tasks: Vec<Task> = read_json_or_default(&self.tasks_path)?;
+        let settings: Settings = read_json_or_default(&self.settings_path)?;
+        validate_settings(&settings)?;
+        *self.tasks.lock().map_err(|_| "任务数据锁已损坏".to_string())? = tasks;
+        *self.settings.lock().map_err(|_| "配置锁已损坏".to_string())? = settings;
+        Ok(())
+    }
+
     pub fn list_tasks(&self) -> Result<Vec<Task>, String> {
         let tasks = self.tasks.lock().map_err(|_| "任务数据锁已损坏".to_string())?;
         Ok(tasks.clone())
@@ -441,6 +451,7 @@ mod tests {
             theme: "dark".into(),
             todo_color: "purple".into(),
             done_color: "gray".into(),
+            sync: Default::default(),
         };
         store.update_settings(settings.clone()).expect("保存配置");
         let reloaded = AppStore::load(dir.0.clone()).expect("重新读取存储");

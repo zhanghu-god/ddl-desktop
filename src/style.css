@@ -419,3 +419,32 @@ html[data-theme="dark"] .weekday-btn.selected { color: #172039; }
   .task-time { display: none; }
   .storage-path { display: none; }
 }
+
+/* ---------- WebDAV 同步面板 ---------- */
+.check-field { display: flex; align-items: center; gap: 9px; font-size: 13px; cursor: pointer; }
+.check-field input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.sync-modal { width: min(480px, calc(100vw - 24px)); }
+.sync-modal .field, .sync-modal .check-field { margin-top: 10px; }
+.sync-actions { flex-wrap: wrap; }
+
+/* ---------- 移动端适配 ---------- */
+@media (pointer: coarse) {
+  .add-task { opacity: 1; }
+  .delete-task { opacity: 1; }
+}
+@media (max-width: 720px) {
+  .app-header { padding: 8px 10px; gap: 8px; flex-wrap: wrap; }
+  .brand span { display: none; }
+  .brand strong { font-size: 15px; }
+  .header-actions { gap: 6px; }
+  .header-actions .button { padding: 6px 10px; font-size: 12px; }
+  .main-content { padding: 6px 6px 4px; }
+  .calendar-toolbar { flex-wrap: wrap; gap: 6px; }
+  .month-summary { display: none; }
+  .day-number { font-size: 10px; }
+  .task-title { font-size: 10px; }
+  .status-bar { font-size: 11px; }
+  .storage-path { display: none; }
+  .field-row { flex-direction: column; }
+  .modal { width: calc(100vw - 16px); }
+}

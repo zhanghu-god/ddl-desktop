@@ -19,14 +19,17 @@
 - 运行日志写入自身 `data/logs`（按天分文件，含 panic 背栈），由常驻管理器定时清理
 - 关于面板手动检查更新，启动时自动检查更新
 - 自动下载 GitHub Release 便携包并校验 SHA-256，重启后完成替换
+- WebDAV 多端同步：电脑与手机共用同一远端目录，修改自动增量同步，可测试/立即备份/从云恢复
+- Android APK（同仓库构建）：手机端非便携，数据存应用目录，自带 WebDAV 同步与响应式月历
 
-这是首个聚焦核心流程的版本，暂不支持周视图、拖拽改期、重复任务、云同步或 Super Productivity 数据导入。
+这是首个聚焦核心流程的版本，暂不支持周视图、拖拽改期或 Super Productivity 数据导入。
 
 ## 下载与使用
 
 从 [Releases](https://github.com/zhanghu-god/ddl-desktop/releases) 下载：
 
-`ddl-desktop_0.3.5_x64-portable.zip`
+`ddl-desktop_0.3.6_x64-portable.zip`（Windows 便携）
+`ddl-desktop_android-arm64.apk`（Android，由 CI 附加到同一 Release）
 
 1. 将 ZIP 完整解压到一个有写入权限的目录。
 2. 双击 `ddl-desktop.exe`。
@@ -138,4 +141,4 @@ assets\                    # 图标源文件
 
 ## 版本与发布
 
-当前版本：`0.3.5`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。
+当前版本：`0.3.6`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。
