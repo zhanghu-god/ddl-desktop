@@ -1,19 +1,12 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "DDL Board",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "identifier": "com.ddlboard.desktop",
   "build": {
     "frontendDist": "../src"
   },
   "app": {
-    "appDirectoriesOverride": {
-      "config": "./data",
-      "data": "./data",
-      "localData": "./data/cache/webview2",
-      "cache": "./data/cache",
-      "log": "./data/logs"
-    },
     "withGlobalTauri": true,
     "windows": [
       {
