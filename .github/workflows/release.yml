@@ -29,7 +29,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Build portable ZIP
         working-directory: ddl-desktop
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-portable.ps1
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/package-portable.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: ddl-zip
