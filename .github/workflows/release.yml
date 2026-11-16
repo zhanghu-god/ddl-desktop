@@ -99,5 +99,6 @@ jobs:
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
           gh release create "$TAG" --title "DDL Board $TAG" --notes "CI 自动构建：Windows 便携 ZIP + Android APK" 2>/dev/null || true
-          cp dist/apk/*.apk dist/zip/ddl-desktop_android-arm64.apk
+          APK="$(find dist/apk -name '*.apk' | head -n1)"
+          cp "$APK" dist/zip/ddl-desktop_android-arm64.apk
           gh release upload "$TAG" dist/zip/* --clobber
