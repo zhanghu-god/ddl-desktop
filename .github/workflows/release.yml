@@ -17,59 +17,59 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-        with: { path: ws/ddl-desktop }
+        with: { repository: zhanghu-god/rust-rewrite }
       - uses: actions/checkout@v4
-        with: { repository: zhanghu-god/rust-rewrite, path: ws }
+        with: { repository: zhanghu-god/ddl-desktop, path: ddl-desktop }
       - uses: actions/checkout@v4
-        with: { repository: zhanghu-god/push-wp, path: ws/push-wp }
+        with: { repository: zhanghu-god/push-wp, path: push-wp }
       - uses: actions/checkout@v4
-        with: { repository: zhanghu-god/launch-manager, path: ws/launch-manager }
+        with: { repository: zhanghu-god/launch-manager, path: launch-manager }
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - uses: dtolnay/rust-toolchain@stable
       - name: Build portable ZIP
-        working-directory: ws/ddl-desktop
+        working-directory: ddl-desktop
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-portable.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: ddl-zip
           path: |
-            ws/ddl-desktop/release/*_x64-portable.zip
-            ws/ddl-desktop/release/SHA256SUMS.txt
+            ddl-desktop/release/*_x64-portable.zip
+            ddl-desktop/release/SHA256SUMS.txt
 
   android-apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { path: ws/ddl-desktop }
+        with: { repository: zhanghu-god/rust-rewrite }
       - uses: actions/checkout@v4
-        with: { repository: zhanghu-god/rust-rewrite, path: ws }
+        with: { repository: zhanghu-god/ddl-desktop, path: ddl-desktop }
       - uses: actions/checkout@v4
-        with: { repository: zhanghu-god/push-wp, path: ws/push-wp }
+        with: { repository: zhanghu-god/push-wp, path: push-wp }
       - uses: actions/checkout@v4
-        with: { repository: zhanghu-god/launch-manager, path: ws/launch-manager }
+        with: { repository: zhanghu-god/launch-manager, path: launch-manager }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
-      - name: Accept licenses & install NDK/platforms (preinstalled SDK)
+      - name: Accept licenses & install NDK (preinstalled SDK)
         run: |
           SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDKM" --licenses >/dev/null 2>&1 || true
-          "$SDKM" --install "ndk;27.0.12077973" "platforms;android-37"
+          "$SDKM" --install "ndk;27.0.12077973"
       - run: echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: aarch64-linux-android }
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - name: Install JS deps
-        working-directory: ws/ddl-desktop
+        working-directory: ddl-desktop
         run: npm install
       - name: Build APK (arm64, debug)
-        working-directory: ws/ddl-desktop
+        working-directory: ddl-desktop
         run: npx tauri android build --apk --debug --target aarch64
       - uses: actions/upload-artifact@v4
         with:
           name: ddl-apk
-          path: ws/ddl-desktop/src-tauri/gen/android/app/build/outputs/apk/arm64/debug/app-arm64-debug.apk
+          path: ddl-desktop/src-tauri/gen/android/app/build/outputs/apk/arm64/debug/app-arm64-debug.apk
 
   publish:
     needs: [windows-zip, android-apk]
