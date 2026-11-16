@@ -69,11 +69,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ddl-apk
-          path: ddl-desktop/src-tauri/gen/android/app/build/outputs/apk/arm64/debug/app-arm64-debug.apk
+          path: ddl-desktop/src-tauri/gen/android/app/build/outputs/apk/*/debug/*.apk
 
   publish:
     needs: [windows-zip, android-apk]
     runs-on: ubuntu-latest
+    env:
+      GH_REPO: zhanghu-god/ddl-desktop
     steps:
       - uses: actions/download-artifact@v4
         with: { name: ddl-zip, path: dist/zip }
@@ -97,5 +99,5 @@ jobs:
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
           gh release create "$TAG" --title "DDL Board $TAG" --notes "CI 自动构建：Windows 便携 ZIP + Android APK" 2>/dev/null || true
-          cp dist/apk/app-arm64-debug.apk dist/zip/ddl-desktop_android-arm64.apk
+          cp dist/apk/*.apk dist/zip/ddl-desktop_android-arm64.apk
           gh release upload "$TAG" dist/zip/* --clobber
