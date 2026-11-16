@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要构建并发布的 tag（留空则用最新 Release）'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  windows-zip:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: ws/ddl-desktop }
+      - uses: actions/checkout@v4
+        with: { repository: zhanghu-god/rust-rewrite, path: ws }
+      - uses: actions/checkout@v4
+        with: { repository: zhanghu-god/push-wp, path: ws/push-wp }
+      - uses: actions/checkout@v4
+        with: { repository: zhanghu-god/launch-manager, path: ws/launch-manager }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build portable ZIP
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File ws/ddl-desktop/scripts/package-portable.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ddl-zip
+          path: |
+            ws/ddl-desktop/release/*_x64-portable.zip
+            ws/ddl-desktop/release/SHA256SUMS.txt
+
+  android-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: ws/ddl-desktop }
+      - uses: actions/checkout@v4
+        with: { repository: zhanghu-god/rust-rewrite, path: ws }
+      - uses: actions/checkout@v4
+        with: { repository: zhanghu-god/push-wp, path: ws/push-wp }
+      - uses: actions/checkout@v4
+        with: { repository: zhanghu-god/launch-manager, path: ws/launch-manager }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: android-actions/setup-android@v3
+      - name: Install NDK
+        run: sdkmanager --install "ndk;27.0.12077973"
+      - run: echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: aarch64-linux-android }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Install JS deps
+        working-directory: ws/ddl-desktop
+        run: npm install
+      - name: Build APK (arm64, debug)
+        working-directory: ws/ddl-desktop
+        run: npx tauri android build --apk --debug --target aarch64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ddl-apk
+          path: ws/ddl-desktop/src-tauri/gen/android/app/build/outputs/apk/arm64/debug/app-arm64-debug.apk
+
+  publish:
+    needs: [windows-zip, android-apk]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: ddl-zip, path: dist/zip }
+      - uses: actions/download-artifact@v4
+        with: { name: ddl-apk, path: dist/apk }
+      - name: Resolve tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$(gh release view --json tagName -q .tagName)" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create release if missing and upload assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          gh release create "$TAG" --title "DDL Board $TAG" --notes "CI 自动构建：Windows 便携 ZIP + Android APK" 2>/dev/null || true
+          cp dist/apk/app-arm64-debug.apk dist/zip/ddl-desktop_android-arm64.apk
+          gh release upload "$TAG" dist/zip/* --clobber
