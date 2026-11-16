@@ -6,6 +6,7 @@
 
 - 月历视图，周一开始，固定显示六周
 - 上个月、下个月、回到今月，今天高亮
+- 月历区域滚轮切换月份：下滚=下个月、上滚=上个月
 - 在任意日期格中新建 DDL
 - 编辑标题、截止日期与可选时间
 - 全天 DDL、按时排序、过期未完成标红
@@ -25,7 +26,7 @@
 
 从 [Releases](https://github.com/zhanghu-god/ddl-desktop/releases) 下载：
 
-`ddl-desktop_0.3.3_x64-portable.zip`
+`ddl-desktop_0.3.5_x64-portable.zip`
 
 1. 将 ZIP 完整解压到一个有写入权限的目录。
 2. 双击 `ddl-desktop.exe`。
@@ -137,4 +138,4 @@ assets\                    # 图标源文件
 
 ## 版本与发布
 
-当前版本：`0.3.3`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。
+当前版本：`0.3.5`。版本号同时维护在 `src-tauri\Cargo.toml` 和 `src-tauri\tauri.conf.json`。发布时创建同名 Git tag，并将便携 ZIP 上传到 GitHub Release。

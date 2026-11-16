@@ -465,15 +465,33 @@ async function restartForUpdate() {
   }
 }
 
+function shiftMonth(delta) {
+  state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth() + delta, 1);
+  render();
+}
+
 function bindEvents() {
-  $('prev-month').addEventListener('click', () => {
-    state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth() - 1, 1);
-    render();
-  });
-  $('next-month').addEventListener('click', () => {
-    state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth() + 1, 1);
-    render();
-  });
+  $('prev-month').addEventListener('click', () => shiftMonth(-1));
+  $('next-month').addEventListener('click', () => shiftMonth(1));
+  // 月历区域滚轮切换月份：下滚=下月、上滚=上月；累积阈值+冷却防止一次滚动连跳多月。
+  let wheelAccum = 0;
+  let wheelLast = 0;
+  let wheelLock = 0;
+  $('calendar-scroll').addEventListener('wheel', (event) => {
+    event.preventDefault();
+    const now = Date.now();
+    if (now < wheelLock) return;
+    if (now - wheelLast > 240) wheelAccum = 0;
+    wheelLast = now;
+    if (wheelAccum !== 0 && Math.sign(event.deltaY) !== Math.sign(wheelAccum)) wheelAccum = 0;
+    wheelAccum += event.deltaY;
+    if (Math.abs(wheelAccum) >= 60) {
+      const delta = wheelAccum > 0 ? 1 : -1;
+      wheelAccum = 0;
+      wheelLock = now + 320;
+      shiftMonth(delta);
+    }
+  }, { passive: false });
   $('today-btn').addEventListener('click', () => {
     state.viewDate = new Date();
     render();
