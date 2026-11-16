@@ -65,7 +65,7 @@ jobs:
         run: npm install
       - name: Build APK (arm64, debug)
         working-directory: ddl-desktop
-        run: npx tauri android build --apk --debug --target aarch64
+        run: npx tauri android build --apk --debug --target aarch64 || npx tauri android build --apk --debug --target aarch64
       - uses: actions/upload-artifact@v4
         with:
           name: ddl-apk
