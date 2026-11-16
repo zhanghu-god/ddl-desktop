@@ -13,4 +13,5 @@ src-tauri/gen/android/app/build/
 src-tauri/gen/android/buildSrc/build/
 src-tauri/gen/android/buildSrc/.gradle/
 src-tauri/gen/android/buildSrc/.kotlin/
+src-tauri/gen/android/.kotlin/
 src-tauri/gen/android/app/src/main/jniLibs/
