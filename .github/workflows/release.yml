@@ -28,7 +28,8 @@ jobs:
         with: { node-version: 20 }
       - uses: dtolnay/rust-toolchain@stable
       - name: Build portable ZIP
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File ws/ddl-desktop/scripts/package-portable.ps1
+        working-directory: ws/ddl-desktop
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-portable.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: ddl-zip
@@ -49,9 +50,11 @@ jobs:
         with: { repository: zhanghu-god/launch-manager, path: ws/launch-manager }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
-      - uses: android-actions/setup-android@v3
-      - name: Install NDK
-        run: sdkmanager --install "ndk;27.0.12077973"
+      - name: Accept licenses & install NDK/platforms (preinstalled SDK)
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses >/dev/null 2>&1 || true
+          "$SDKM" --install "ndk;27.0.12077973" "platforms;android-37"
       - run: echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: aarch64-linux-android }
