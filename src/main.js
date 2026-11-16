@@ -136,6 +136,7 @@ function renderDay(date, visibleMonth) {
   const number = document.createElement('span');
   number.className = 'day-number';
   number.textContent = date.getDate();
+  number.dataset.weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][date.getDay()];
   const add = document.createElement('button');
   add.type = 'button';
   add.className = 'add-task';

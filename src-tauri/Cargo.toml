@@ -1,6 +1,6 @@
 [package]
 name = "ddl-desktop"
-version = "0.3.10"
+version = "0.3.11"
 description = "独立、便携的 DDL 月历桌面工具（Tauri + Rust）"
 authors = ["zhang"]
 edition = "2021"

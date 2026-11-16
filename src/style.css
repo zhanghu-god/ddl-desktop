@@ -459,3 +459,22 @@ html[data-theme="dark"] .weekday-btn.selected { color: #172039; }
   .sync-modal { padding: 18px; }
 }
 .mobile-update { padding: 22px; }
+
+/* ---------- phone agenda layout (<=700px only; desktop min width is 720px) ---------- */
+@media (max-width: 700px) {
+  .app-header { padding-top: 30px; }
+  .weekdays { display: none; }
+  .calendar-scroll { overflow-y: auto; }
+  .calendar-grid { height: auto; grid-template-columns: 1fr; grid-template-rows: none; }
+  .day-cell { min-height: 64px; padding: 8px 10px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .day-cell:nth-last-child(-n+6) { border-bottom: 1px solid var(--line); }
+  .day-cell.other-month { display: none; }
+  .day-head { height: auto; margin-bottom: 6px; }
+  .day-number { font-size: 13px; }
+  .day-number::after { content: attr(data-weekday); margin-left: 6px; color: var(--muted); font-size: 12px; font-weight: 500; }
+  .task-list { flex: 0 0 auto; overflow: visible; }
+  .task-item { min-height: 32px; padding: 5px 8px; }
+  .task-title { font-size: 13px; }
+  .task-checkbox { width: 16px; height: 16px; }
+  .empty-state { display: none; }
+}
